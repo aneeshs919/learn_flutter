@@ -5,8 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 
 Future<Map<String, dynamic>> fetchData() async {
-  final response =
-      await http.get(Uri.parse('https://jsonplaceholder.typicode.com/todos/1'));
+  final response = await http.get(Uri.parse(
+      'https://run.mocky.io/v3/40761f22-97d6-4ebd-bb69-77ce78cc7914'));
 
   // Print the entire response to the console
   print('Response: ${response.statusCode}');
@@ -77,12 +77,14 @@ class CustomListItem extends StatelessWidget {
     required this.title,
     required this.user,
     required this.viewCount,
+    required this.status,
   }) : super(key: key);
 
   final Widget thumbnail;
   final String title;
   final String user;
   final int viewCount;
+  final String status;
 
   @override
   Widget build(BuildContext context) {
@@ -91,57 +93,64 @@ class CustomListItem extends StatelessWidget {
         print('Item tapped');
         // Add your onTap logic for the entire card here
       },
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Expanded(
-                    flex: 1,
-                    child: thumbnail,
-                  ),
-                  Expanded(
-                    flex: 3,
-                    child: _VideoDescription(
-                      title: title,
-                      user: user,
-                      viewCount: viewCount,
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      _showMoreOptions(context);
-                    },
-                    child: const Icon(
-                      Icons.more_vert,
-                      size: 16.0,
-                    ),
-                  ),
-                ],
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: <Widget>[
-                  Container(
-                    padding:
-                        EdgeInsets.only(top: 16.0), // Add top padding as needed
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          // IconButton in the same row
+          IconButton(
+            icon: Icon(Icons.favorite),
+            onPressed: () {
+              // Handle button press
+            },
+          ),
+          // Card in the same row
+          Expanded(
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        // Your other widgets
-                        _ActionButtons(),
+                        Expanded(
+                          flex: 1,
+                          child: thumbnail,
+                        ),
+                        Expanded(
+                          flex: 3,
+                          child: _VideoDescription(
+                            status: status,
+                            title: title,
+                            user: user,
+                            viewCount: viewCount,
+                          ),
+                        ),
                       ],
                     ),
-                  ),
-                ],
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: <Widget>[
+                        Container(
+                          padding: EdgeInsets.only(
+                              top: 16.0), // Add top padding as needed
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: <Widget>[
+                              // Your other widgets
+                              _ActionButtons(),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -161,19 +170,8 @@ class MoreOptions extends StatefulWidget {
 }
 
 class _MoreOptionsState extends State<MoreOptions> {
-  late Future<Map<String, dynamic>> data;
-
-  @override
-  void initState() {
-    super.initState();
-    data = fetchData();
-  }
-
   @override
   Widget build(BuildContext context) {
-    // print('Title: $futureAlbum.title');
-    print('Body333: ${data}');
-
     return Container(
         child: Padding(
       padding: const EdgeInsets.all(8.0),
@@ -200,11 +198,13 @@ class _VideoDescription extends StatelessWidget {
     required this.title,
     required this.user,
     required this.viewCount,
+    required this.status,
   });
 
   final String title;
   final String user;
   final int viewCount;
+  final String status;
 
   @override
   Widget build(BuildContext context) {
@@ -213,6 +213,14 @@ class _VideoDescription extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
+          Text(
+            status,
+            style: const TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 14.0,
+                color: Colors.blue),
+          ),
+          const Padding(padding: EdgeInsets.symmetric(vertical: 2.0)),
           Text(
             title,
             style: const TextStyle(
@@ -289,61 +297,89 @@ class _ActionButtons extends StatelessWidget {
 class MyListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      children: <CustomListItem>[
-        CustomListItem(
-          user: 'Flutter',
-          viewCount: 999000,
-          thumbnail: Container(
-            width: 100.0, // Replace with your desired width
-            height: 100.0, // Replace with your desired height
-            decoration: BoxDecoration(
-              color: Colors.blue,
-            ),
-          ),
-          title: 'The Flutter YouTube Channel',
-        ),
-        CustomListItem(
-          user: 'Dash',
-          viewCount: 884000,
-          thumbnail: Container(
-            width: 100.0, // Replace with your desired width
-            height: 100.0, // Replace with your desired height
-            decoration: BoxDecoration(
-              color: Colors.blue,
-            ),
-          ),
-          title: 'Announcing Flutter 1.0',
-        ),
-      ],
+    return FutureBuilder(
+      future: fetchData(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return CircularProgressIndicator();
+        } else if (snapshot.hasError) {
+          return Text('Error: ${snapshot.error}');
+        } else {
+          List<CustomListItem> data = snapshot.data as List<CustomListItem>;
+          return ListView.builder(
+            itemCount: data.length,
+            itemBuilder: (context, index) {
+              return CustomListItem(
+                status: data[index].status,
+                user: data[index].user,
+                viewCount: data[index].viewCount,
+                thumbnail: data[index].thumbnail,
+                title: data[index].title,
+              );
+            },
+          );
+        }
+      },
     );
-    // ListTile(
-    //   leading: Icon(Icons.star),
-    //   title: Text('Item 1'),
-    //   subtitle: Text('Description for Item 1'),
-    //   onTap: () {
-    //     // Handle item tap for Item 1
-    //     print('Item 1 tapped');
-    //   },
-    // ),
-    // ListTile(
-    //   leading: Icon(Icons.star),
-    //   title: Text('Item 2'),
-    //   subtitle: Text('Description for Item 2'),
-    //   onTap: () {
-    //     // Handle item tap for Item 2
-    //     print('Item 2 tapped');
-    //   },
-    // ),
-    // ListTile(
-    //   leading: Icon(Icons.star),
-    //   title: Text('Item 3'),
-    //   subtitle: Text('Description for Item 3'),
-    //   onTap: () {
-    //     // Handle item tap for Item 3
-    //     print('Item 3 tapped');
-    //   },
-    // ),
-    // Add more ListTiles as needed
   }
+
+  Future<List<CustomListItem>> fetchData() async {
+    final response = await http.get(
+      Uri.parse('https://run.mocky.io/v3/40761f22-97d6-4ebd-bb69-77ce78cc7914'),
+    );
+
+    if (response.statusCode == 200) {
+      // Parse JSON data
+      List<dynamic> apiData = jsonDecode(response.body);
+      List<CustomListItem> data = apiData.map((item) {
+        return CustomListItem(
+          status: item['status'],
+          user: item['start_time'],
+          viewCount: item['event_id'],
+          thumbnail: Container(
+            width: 100.0,
+            height: 100.0,
+            decoration: BoxDecoration(
+              color: Colors.white,
+            ),
+          ),
+          title: item['title'],
+        );
+      }).toList();
+      return data;
+    } else {
+      throw Exception('Failed to load data');
+    }
+  }
+  // @override
+  // Widget build(BuildContext context) {
+  //   return ListView(
+  //     children: <CustomListItem>[
+  //       CustomListItem(
+  //         user: 'Flutter',
+  //         viewCount: 999000,
+  //         thumbnail: Container(
+  //           width: 100.0, // Replace with your desired width
+  //           height: 100.0, // Replace with your desired height
+  //           decoration: BoxDecoration(
+  //             color: Colors.blue,
+  //           ),
+  //         ),
+  //         title: 'The Flutter YouTube Channel',
+  //       ),
+  //       CustomListItem(
+  //         user: 'Dash',
+  //         viewCount: 884000,
+  //         thumbnail: Container(
+  //           width: 100.0, // Replace with your desired width
+  //           height: 100.0, // Replace with your desired height
+  //           decoration: BoxDecoration(
+  //             color: Colors.blue,
+  //           ),
+  //         ),
+  //         title: 'Announcing Flutter 1.0',
+  //       ),
+  //     ],
+  //   );
+  // }
 }
